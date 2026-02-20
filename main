@@ -542,6 +542,7 @@ function Library:CreateWindow(title)
         TabButton.TextSize = 13
         TabButton.TextXAlignment = Enum.TextXAlignment.Left
         TabButton.AutoButtonColor = false
+        TabButton.LayoutOrder = #Window.Tabs -- Ensures tabs appear in order created
         TabButton.Parent = Sidebar
         Corner(TabButton, 8)
         
@@ -633,8 +634,9 @@ function Library:CreateWindow(title)
         return Tab
     end
     
-    -- Config Management Tab (Auto-added)
+    -- Config Management Tab (Auto-added) - Always appears at bottom
     local ConfigTab = Window:CreateTab("Config", "⚙")
+    ConfigTab.Button.LayoutOrder = 999 -- Ensures Config tab is always last
     
     ConfigTab:AddLabel("Configuration Manager")
     
