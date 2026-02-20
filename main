@@ -65,12 +65,21 @@ local function LoadSavedConfigs()
     end
     
     local configs = {}
-    local files = listfiles(SaveFolder)
+    local success, files = pcall(function()
+        return listfiles(SaveFolder)
+    end)
+    
+    if not success then
+        warn("Failed to list files")
+        return configs
+    end
     
     for _, file in pairs(files) do
         local fileName = file:match("([^/\\]+)$"):gsub("%.txt$", "")
         table.insert(configs, fileName)
     end
+    
+    print("Loaded configs:", table.concat(configs, ", "))
     
     return configs
 end
@@ -86,8 +95,13 @@ local function SaveConfig(name, data)
     end
     
     local success, err = pcall(function()
-        writefile(SaveFolder .. "/" .. name .. ".txt", HttpService:JSONEncode(data))
+        local jsonData = HttpService:JSONEncode(data)
+        writefile(SaveFolder .. "/" .. name .. ".txt", jsonData)
     end)
+    
+    if not success then
+        warn("Save error:", err)
+    end
     
     return success
 end
@@ -623,8 +637,8 @@ function Library:CreateWindow(title)
         Tab.Content = TabContent
         table.insert(Window.Tabs, Tab)
         
-        -- Auto-select first tab
-        if #Window.Tabs == 1 then
+        -- Auto-select first tab (but not if it's the Config tab)
+        if #Window.Tabs == 1 and TabButton.LayoutOrder < 900 then
             TabButton.BackgroundTransparency = 0
             TabButton.TextColor3 = Colors.TextPrimary
             TabContent.Visible = true
@@ -665,227 +679,253 @@ function Library:CreateWindow(title)
         return Tab
     end
     
-    -- Config Management Tab (Auto-added) - Always appears at bottom
-    local ConfigTab = Window:CreateTab("Config", "⚙")
-    ConfigTab.Button.LayoutOrder = 999 -- Ensures Config tab is always last
-    
-    ConfigTab:AddLabel("Configuration Manager")
-    
-    local configNameBox = ConfigTab:AddTextbox("Enter config name...", nil)
-    
-    -- Config list container
-    local ConfigListContainer = Instance.new("Frame")
-    ConfigListContainer.Size = UDim2.new(1, 0, 0, 200)
-    ConfigListContainer.BackgroundColor3 = Colors.Surface
-    ConfigListContainer.BorderSizePixel = 0
-    ConfigListContainer.Parent = ConfigTab.Content
-    Corner(ConfigListContainer, 8)
-    
-    local ConfigScroll = Instance.new("ScrollingFrame")
-    ConfigScroll.Size = UDim2.new(1, -8, 1, -8)
-    ConfigScroll.Position = UDim2.new(0, 4, 0, 4)
-    ConfigScroll.BackgroundTransparency = 1
-    ConfigScroll.BorderSizePixel = 0
-    ConfigScroll.ScrollBarThickness = 4
-    ConfigScroll.ScrollBarImageColor3 = Colors.Primary
-    ConfigScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-    ConfigScroll.Parent = ConfigListContainer
-    
-    local ConfigList = Instance.new("UIListLayout")
-    ConfigList.Padding = UDim.new(0, 4)
-    ConfigList.SortOrder = Enum.SortOrder.LayoutOrder
-    ConfigList.Parent = ConfigScroll
-    
-    local ConfigPad = Instance.new("UIPadding")
-    ConfigPad.PaddingTop = UDim.new(0, 4)
-    ConfigPad.PaddingLeft = UDim.new(0, 4)
-    ConfigPad.PaddingRight = UDim.new(0, 4)
-    ConfigPad.PaddingBottom = UDim.new(0, 4)
-    ConfigPad.Parent = ConfigScroll
-    
-    ConfigList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        ConfigScroll.CanvasSize = UDim2.new(0, 0, 0, ConfigList.AbsoluteContentSize.Y + 8)
-    end)
-    
-    local SelectedConfig = nil
-    
-    local function UpdateConfigList()
-        for _, child in pairs(ConfigScroll:GetChildren()) do
-            if child:IsA("Frame") then child:Destroy() end
+    -- Function to create config tab (called at the end)
+    function Window:InitializeConfigTab()
+        -- Config Management Tab (Auto-added) - Always appears at bottom
+        local ConfigTab = Window:CreateTab("Config", "⚙")
+        ConfigTab.Button.LayoutOrder = 999 -- Ensures Config tab is always last
+        
+        ConfigTab:AddLabel("Configuration Manager")
+        
+        local configNameBox = ConfigTab:AddTextbox("Enter config name...", nil)
+        
+        -- Config list container
+        local ConfigListContainer = Instance.new("Frame")
+        ConfigListContainer.Size = UDim2.new(1, 0, 0, 200)
+        ConfigListContainer.BackgroundColor3 = Colors.Surface
+        ConfigListContainer.BorderSizePixel = 0
+        ConfigListContainer.Parent = ConfigTab.Content
+        Corner(ConfigListContainer, 8)
+        
+        local ConfigScroll = Instance.new("ScrollingFrame")
+        ConfigScroll.Size = UDim2.new(1, -8, 1, -8)
+        ConfigScroll.Position = UDim2.new(0, 4, 0, 4)
+        ConfigScroll.BackgroundTransparency = 1
+        ConfigScroll.BorderSizePixel = 0
+        ConfigScroll.ScrollBarThickness = 4
+        ConfigScroll.ScrollBarImageColor3 = Colors.Primary
+        ConfigScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+        ConfigScroll.Parent = ConfigListContainer
+        
+        local ConfigList = Instance.new("UIListLayout")
+        ConfigList.Padding = UDim.new(0, 4)
+        ConfigList.SortOrder = Enum.SortOrder.LayoutOrder
+        ConfigList.Parent = ConfigScroll
+        
+        local ConfigPad = Instance.new("UIPadding")
+        ConfigPad.PaddingTop = UDim.new(0, 4)
+        ConfigPad.PaddingLeft = UDim.new(0, 4)
+        ConfigPad.PaddingRight = UDim.new(0, 4)
+        ConfigPad.PaddingBottom = UDim.new(0, 4)
+        ConfigPad.Parent = ConfigScroll
+        
+        ConfigList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            ConfigScroll.CanvasSize = UDim2.new(0, 0, 0, ConfigList.AbsoluteContentSize.Y + 8)
+        end)
+        
+        local SelectedConfig = nil
+        
+        local function UpdateConfigList()
+            for _, child in pairs(ConfigScroll:GetChildren()) do
+                if child:IsA("Frame") then child:Destroy() end
+            end
+            
+            SavedConfigs = LoadSavedConfigs()
+            
+            for _, configName in pairs(SavedConfigs) do
+                local ConfigItem = Instance.new("Frame")
+                ConfigItem.Size = UDim2.new(1, 0, 0, 32)
+                ConfigItem.BackgroundColor3 = Colors.Elevated
+                ConfigItem.BorderSizePixel = 0
+                ConfigItem.Parent = ConfigScroll
+                Corner(ConfigItem, 6)
+                
+                local ConfigName = Instance.new("TextLabel")
+                ConfigName.Size = UDim2.new(1, -80, 1, 0)
+                ConfigName.Position = UDim2.new(0, 8, 0, 0)
+                ConfigName.BackgroundTransparency = 1
+                ConfigName.Font = Enum.Font.Gotham
+                ConfigName.Text = configName
+                ConfigName.TextColor3 = Colors.TextPrimary
+                ConfigName.TextSize = 12
+                ConfigName.TextXAlignment = Enum.TextXAlignment.Left
+                ConfigName.Parent = ConfigItem
+                
+                local SelectBtn = Instance.new("TextButton")
+                SelectBtn.Size = UDim2.new(0, 70, 0, 24)
+                SelectBtn.Position = UDim2.new(1, -74, 0.5, 0)
+                SelectBtn.AnchorPoint = Vector2.new(0, 0.5)
+                SelectBtn.BackgroundColor3 = Colors.Primary
+                SelectBtn.BorderSizePixel = 0
+                SelectBtn.Font = Enum.Font.GothamBold
+                SelectBtn.Text = "Select"
+                SelectBtn.TextColor3 = Colors.TextPrimary
+                SelectBtn.TextSize = 11
+                SelectBtn.Parent = ConfigItem
+                Corner(SelectBtn, 4)
+                
+                SelectBtn.MouseButton1Click:Connect(function()
+                    SelectedConfig = configName
+                    configNameBox.SetText(configName)
+                    
+                    for _, item in pairs(ConfigScroll:GetChildren()) do
+                        if item:IsA("Frame") then
+                            item.BackgroundColor3 = Colors.Elevated
+                        end
+                    end
+                    
+                    ConfigItem.BackgroundColor3 = Colors.Primary
+                    
+                    game.StarterGui:SetCore("SendNotification", {
+                        Title = "D.R.X";
+                        Text = "Selected: " .. configName;
+                        Duration = 2;
+                    })
+                end)
+            end
         end
         
-        SavedConfigs = LoadSavedConfigs()
+        ConfigTab:AddButton("💾 Save Config", function()
+            local configName = configNameBox.GetText()
+            print("Save clicked, config name:", configName)
+            
+            if configName == "" then
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "D.R.X";
+                    Text = "Please enter a config name!";
+                    Duration = 2;
+                })
+                return
+            end
+            
+            local data = {}
+            for key, element in pairs(Window.ConfigValues) do
+                data[key] = element.GetValue()
+                print("Saving", key, "=", data[key])
+            end
+            
+            print("Attempting to save config:", configName)
+            if SaveConfig(configName, data) then
+                print("Save successful!")
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "D.R.X";
+                    Text = "Config saved: " .. configName;
+                    Duration = 2;
+                })
+                -- Update list asynchronously to avoid blocking
+                task.spawn(function()
+                    task.wait(0.1)
+                    print("Updating config list...")
+                    UpdateConfigList()
+                end)
+            else
+                print("Save failed!")
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "D.R.X";
+                    Text = "Failed to save config!";
+                    Duration = 2;
+                })
+            end
+        end)
         
-        for _, configName in pairs(SavedConfigs) do
-            local ConfigItem = Instance.new("Frame")
-            ConfigItem.Size = UDim2.new(1, 0, 0, 32)
-            ConfigItem.BackgroundColor3 = Colors.Elevated
-            ConfigItem.BorderSizePixel = 0
-            ConfigItem.Parent = ConfigScroll
-            Corner(ConfigItem, 6)
+        ConfigTab:AddButton("📂 Load Config", function()
+            local configName = configNameBox.GetText()
+            if configName == "" then
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "D.R.X";
+                    Text = "Please select a config!";
+                    Duration = 2;
+                })
+                return
+            end
             
-            local ConfigName = Instance.new("TextLabel")
-            ConfigName.Size = UDim2.new(1, -80, 1, 0)
-            ConfigName.Position = UDim2.new(0, 8, 0, 0)
-            ConfigName.BackgroundTransparency = 1
-            ConfigName.Font = Enum.Font.Gotham
-            ConfigName.Text = configName
-            ConfigName.TextColor3 = Colors.TextPrimary
-            ConfigName.TextSize = 12
-            ConfigName.TextXAlignment = Enum.TextXAlignment.Left
-            ConfigName.Parent = ConfigItem
-            
-            local SelectBtn = Instance.new("TextButton")
-            SelectBtn.Size = UDim2.new(0, 70, 0, 24)
-            SelectBtn.Position = UDim2.new(1, -74, 0.5, 0)
-            SelectBtn.AnchorPoint = Vector2.new(0, 0.5)
-            SelectBtn.BackgroundColor3 = Colors.Primary
-            SelectBtn.BorderSizePixel = 0
-            SelectBtn.Font = Enum.Font.GothamBold
-            SelectBtn.Text = "Select"
-            SelectBtn.TextColor3 = Colors.TextPrimary
-            SelectBtn.TextSize = 11
-            SelectBtn.Parent = ConfigItem
-            Corner(SelectBtn, 4)
-            
-            SelectBtn.MouseButton1Click:Connect(function()
-                SelectedConfig = configName
-                configNameBox.SetText(configName)
-                
-                for _, item in pairs(ConfigScroll:GetChildren()) do
-                    if item:IsA("Frame") then
-                        item.BackgroundColor3 = Colors.Elevated
+            local data = LoadConfig(configName)
+            if data then
+                -- Set all values without triggering callbacks
+                for key, element in pairs(Window.ConfigValues) do
+                    if data[key] ~= nil then
+                        element.SetValue(data[key], false)
                     end
                 end
                 
-                ConfigItem.BackgroundColor3 = Colors.Primary
+                -- Wait a tiny bit then trigger all callbacks to apply settings
+                task.wait(0.05)
+                for key, element in pairs(Window.ConfigValues) do
+                    if data[key] ~= nil and element.TriggerCallback then
+                        element.TriggerCallback()
+                    end
+                end
                 
                 game.StarterGui:SetCore("SendNotification", {
                     Title = "D.R.X";
-                    Text = "Selected: " .. configName;
+                    Text = "Config loaded: " .. configName;
                     Duration = 2;
                 })
-            end)
+            else
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "D.R.X";
+                    Text = "Failed to load config!";
+                    Duration = 2;
+                })
+            end
+        end)
+        
+        ConfigTab:AddButton("🗑 Delete Config", function()
+            local configName = configNameBox.GetText()
+            if configName == "" then
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "D.R.X";
+                    Text = "Please select a config!";
+                    Duration = 2;
+                })
+                return
+            end
+            
+            if DeleteConfig(configName) then
+                configNameBox.Clear()
+                SelectedConfig = nil
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "D.R.X";
+                    Text = "Config deleted: " .. configName;
+                    Duration = 2;
+                })
+                -- Update list asynchronously to avoid blocking
+                task.spawn(function()
+                    task.wait(0.05)
+                    UpdateConfigList()
+                end)
+            else
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "D.R.X";
+                    Text = "Failed to delete config!";
+                    Duration = 2;
+                })
+            end
+        end)
+        
+        ConfigTab:AddLabel("Keybinds")
+        
+        local toggleKey = ConfigTab:AddKeybind("Toggle GUI", "RightShift", nil)
+        
+        -- Load config list on startup
+        UpdateConfigList()
+        
+        -- Now select the FIRST user tab (not Config)
+        task.wait(0.05)
+        if Window.Tabs[1] and Window.Tabs[1].Button.LayoutOrder < 900 then
+            local firstTab = Window.Tabs[1]
+            firstTab.Button.BackgroundTransparency = 0
+            firstTab.Button.TextColor3 = Colors.TextPrimary
+            firstTab.Content.Visible = true
+            for _, tab in pairs(Window.Tabs) do
+                if tab ~= firstTab then
+                    tab.Content.Visible = false
+                end
+            end
         end
+        
+        Window.ToggleKey = toggleKey
     end
-    
-    ConfigTab:AddButton("💾 Save Config", function()
-        local configName = configNameBox.GetText()
-        if configName == "" then
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "D.R.X";
-                Text = "Please enter a config name!";
-                Duration = 2;
-            })
-            return
-        end
-        
-        local data = {}
-        for key, element in pairs(Window.ConfigValues) do
-            data[key] = element.GetValue()
-        end
-        
-        if SaveConfig(configName, data) then
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "D.R.X";
-                Text = "Config saved: " .. configName;
-                Duration = 2;
-            })
-            -- Update list asynchronously to avoid blocking
-            task.spawn(function()
-                task.wait(0.05)
-                UpdateConfigList()
-            end)
-        else
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "D.R.X";
-                Text = "Failed to save config!";
-                Duration = 2;
-            })
-        end
-    end)
-    
-    ConfigTab:AddButton("📂 Load Config", function()
-        local configName = configNameBox.GetText()
-        if configName == "" then
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "D.R.X";
-                Text = "Please select a config!";
-                Duration = 2;
-            })
-            return
-        end
-        
-        local data = LoadConfig(configName)
-        if data then
-            -- Set all values without triggering callbacks
-            for key, element in pairs(Window.ConfigValues) do
-                if data[key] ~= nil then
-                    element.SetValue(data[key], false)
-                end
-            end
-            
-            -- Wait a tiny bit then trigger all callbacks to apply settings
-            task.wait(0.05)
-            for key, element in pairs(Window.ConfigValues) do
-                if data[key] ~= nil and element.TriggerCallback then
-                    element.TriggerCallback()
-                end
-            end
-            
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "D.R.X";
-                Text = "Config loaded: " .. configName;
-                Duration = 2;
-            })
-        else
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "D.R.X";
-                Text = "Failed to load config!";
-                Duration = 2;
-            })
-        end
-    end)
-    
-    ConfigTab:AddButton("🗑 Delete Config", function()
-        local configName = configNameBox.GetText()
-        if configName == "" then
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "D.R.X";
-                Text = "Please select a config!";
-                Duration = 2;
-            })
-            return
-        end
-        
-        if DeleteConfig(configName) then
-            configNameBox.Clear()
-            SelectedConfig = nil
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "D.R.X";
-                Text = "Config deleted: " .. configName;
-                Duration = 2;
-            })
-            -- Update list asynchronously to avoid blocking
-            task.spawn(function()
-                task.wait(0.05)
-                UpdateConfigList()
-            end)
-        else
-            game.StarterGui:SetCore("SendNotification", {
-                Title = "D.R.X";
-                Text = "Failed to delete config!";
-                Duration = 2;
-            })
-        end
-    end)
-    
-    ConfigTab:AddLabel("Keybinds")
-    
-    local toggleKey = ConfigTab:AddKeybind("Toggle GUI", "RightShift", nil)
-    
-    -- Load config list on startup
-    UpdateConfigList()
     
     -- Dragging
     local dragging = false
@@ -920,9 +960,13 @@ function Library:CreateWindow(title)
     -- Toggle keybind
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if not gameProcessed then
-            if input.KeyCode.Name == toggleKey.GetKey() then
-                Main.Visible = not Main.Visible
-            end
+            -- Wait until InitializeConfigTab is called
+            task.spawn(function()
+                while not Window.ToggleKey do task.wait() end
+                if input.KeyCode.Name == Window.ToggleKey.GetKey() then
+                    Main.Visible = not Main.Visible
+                end
+            end)
         end
     end)
     
@@ -949,7 +993,6 @@ function Library:CreateWindow(title)
         end
     end
     
-    Window.ToggleKey = toggleKey
     Window.Main = Main
     
     return Window
