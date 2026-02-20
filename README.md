@@ -1,6 +1,8 @@
 # D.R.X UI Library
 
-A clean, modern, and fully-featured GUI library for Roblox executors with built-in configuration save/load system.
+A clean, modern, and fully-featured GUI library for Roblox with built-in configuration save/load system.
+
+**Educational Purpose:** This library is intended for learning Lua programming, UI design patterns, and game development concepts. Use responsibly and in accordance with Roblox Terms of Service.
 
 ## Features
 
@@ -19,7 +21,7 @@ A clean, modern, and fully-featured GUI library for Roblox executors with built-
 
 1. Upload `drx-library.lua` to your GitHub repository
 2. Get the raw link to the file
-3. Load it in your executor:
+3. Load it in your script:
 
 ```lua
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/drx-library.lua"))()
@@ -27,7 +29,7 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_
 
 ### Method 2: Direct File
 
-Simply paste the contents of `drx-library.lua` directly into your executor.
+Simply paste the contents of `drx-library.lua` directly into your script environment.
 
 ## Quick Start
 
@@ -36,25 +38,25 @@ Simply paste the contents of `drx-library.lua` directly into your executor.
 local Library = loadstring(game:HttpGet("YOUR_GITHUB_RAW_LINK"))()
 
 -- Create a window
-local Window = Library:CreateWindow("My Custom GUI")
+local Window = Library:CreateWindow("My Settings Panel")
 
 -- Create tabs
 local MainTab = Window:CreateTab("Main", "🏠")
-local SettingsTab = Window:CreateTab("Settings", "⚙")
+local PreferencesTab = Window:CreateTab("Preferences", "⚙")
 
 -- Add elements
 MainTab:AddLabel("Welcome!")
 
-MainTab:AddButton("Click Me", function()
+MainTab:AddButton("Test Button", function()
     print("Button clicked!")
 end)
 
 MainTab:AddToggle("Enable Feature", false, function(value)
-    print("Toggle is now:", value)
+    print("Feature is now:", value)
 end)
 
-MainTab:AddSlider("Speed", 0, 100, 50, function(value)
-    print("Slider value:", value)
+MainTab:AddSlider("Volume", 0, 100, 50, function(value)
+    print("Volume level:", value)
 end)
 ```
 
@@ -101,8 +103,8 @@ Tab:AddButton(text, callback)
 
 **Example:**
 ```lua
-MainTab:AddButton("Reset", function()
-    game.Players.LocalPlayer.Character.Humanoid.Health = 0
+MainTab:AddButton("Show Message", function()
+    print("Hello from D.R.X!")
 end)
 ```
 
@@ -125,12 +127,12 @@ local toggle = Tab:AddToggle(text, default, callback)
 
 **Example:**
 ```lua
-local noClip = MainTab:AddToggle("No Clip", false, function(enabled)
-    print("No Clip:", enabled)
+local darkMode = MainTab:AddToggle("Dark Mode", false, function(enabled)
+    print("Dark Mode:", enabled)
 end)
 
 -- Later...
-noClip:SetValue(true) -- Enable programmatically
+darkMode:SetValue(true) -- Enable programmatically
 ```
 
 ---
@@ -154,11 +156,9 @@ local slider = Tab:AddSlider(text, min, max, default, callback)
 
 **Example:**
 ```lua
-local walkSpeed = MainTab:AddSlider("Walk Speed", 16, 200, 16, function(value)
-    local player = game.Players.LocalPlayer
-    if player.Character then
-        player.Character.Humanoid.WalkSpeed = value
-    end
+local volumeSlider = MainTab:AddSlider("Music Volume", 0, 100, 50, function(value)
+    -- Adjust music volume in your game
+    print("Volume set to:", value)
 end)
 ```
 
@@ -226,8 +226,8 @@ local keybind = Tab:AddKeybind(text, default, callback)
 
 **Example:**
 ```lua
-local toggleKey = MainTab:AddKeybind("Toggle Feature", "F", function(key)
-    print("New keybind:", key)
+local actionKey = MainTab:AddKeybind("Action Hotkey", "E", function(key)
+    print("Hotkey set to:", key)
 end)
 ```
 
@@ -276,36 +276,41 @@ Each config stores all slider values, toggle states, and keybind settings.
 local Library = loadstring(game:HttpGet("YOUR_RAW_LINK"))()
 
 -- Create window
-local Window = Library:CreateWindow("My Executor")
+local Window = Library:CreateWindow("Game Settings")
 
 -- Create tabs
-local PlayerTab = Window:CreateTab("Player", "👤")
-local VisualsTab = Window:CreateTab("Visuals", "👁")
+local AudioTab = Window:CreateTab("Audio", "🔊")
+local VideoTab = Window:CreateTab("Video", "🎮")
 
--- Player Tab
-PlayerTab:AddLabel("Movement")
+-- Audio Tab
+AudioTab:AddLabel("Sound Settings")
 
-PlayerTab:AddSlider("Walk Speed", 16, 200, 16, function(value)
-    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+AudioTab:AddSlider("Master Volume", 0, 100, 75, function(value)
+    print("Master Volume:", value)
+    -- Apply volume to your game audio
 end)
 
-PlayerTab:AddSlider("Jump Power", 50, 300, 50, function(value)
-    game.Players.LocalPlayer.Character.Humanoid.JumpPower = value
+AudioTab:AddSlider("Music Volume", 0, 100, 50, function(value)
+    print("Music Volume:", value)
+    -- Apply to background music
 end)
 
-PlayerTab:AddToggle("Infinite Jump", false, function(enabled)
-    -- Your infinite jump code
+AudioTab:AddToggle("Mute Audio", false, function(enabled)
+    print("Audio Muted:", enabled)
+    -- Mute/unmute game sounds
 end)
 
--- Visuals Tab
-VisualsTab:AddLabel("World")
+-- Video Tab
+VideoTab:AddLabel("Display Settings")
 
-VisualsTab:AddToggle("Fullbright", false, function(enabled)
-    game.Lighting.Brightness = enabled and 2 or 1
+VideoTab:AddToggle("Fullscreen", false, function(enabled)
+    print("Fullscreen:", enabled)
+    -- Toggle fullscreen mode
 end)
 
-VisualsTab:AddSlider("FOV", 70, 120, 90, function(value)
-    workspace.CurrentCamera.FieldOfView = value
+VideoTab:AddSlider("Brightness", 0, 100, 50, function(value)
+    print("Brightness:", value)
+    -- Adjust screen brightness
 end)
 ```
 
@@ -319,24 +324,24 @@ end)
 
 ## Requirements
 
-Your executor must support:
+Your scripting environment should support:
 - `game:HttpGet()` (for loading from GitHub)
 - File functions: `isfolder`, `makefolder`, `writefile`, `readfile`, `delfile`, `listfiles`
 
-Most modern executors support these by default.
+**Note:** This library is designed for educational purposes and local testing environments. Always respect Roblox Terms of Service.
 
 ---
 
 ## Tips
 
 1. **Organization**: Use labels to organize sections within tabs
-2. **Config Names**: Use descriptive names like "Speed_Build" or "PvP_Setup"
-3. **Respawn Handling**: Reapply settings on character respawn:
+2. **Config Names**: Use descriptive names like "Audio_Preset" or "Video_High"
+3. **Event Handling**: Connect to game events as needed:
 
 ```lua
-game.Players.LocalPlayer.CharacterAdded:Connect(function(char)
-    wait(0.5)
-    -- Reload your config or reapply settings
+-- Example: Reconnect settings when needed
+game:GetService("RunService").Heartbeat:Connect(function()
+    -- Update your UI or apply settings
 end)
 ```
 
@@ -374,9 +379,25 @@ Free to use and modify. Credit appreciated but not required.
 
 For issues or questions:
 1. Check the example usage file
-2. Ensure your executor supports required functions
+2. Ensure your environment supports required functions
 3. Verify your GitHub raw link is correct
 
 ---
 
-**Created with ❤️ for the Roblox scripting community**
+## Disclaimer
+
+This library is provided for **educational purposes only** to learn about:
+- Lua programming
+- GUI design and UX patterns
+- Data persistence and configuration management
+- Event-driven programming
+
+**Important:** 
+- Use this library responsibly and in accordance with Roblox Terms of Service
+- Do not use this library to create cheats, exploits, or violate any game rules
+- The creators are not responsible for misuse of this library
+- This is intended for learning and private testing in authorized environments only
+
+---
+
+**Created for educational purposes**
