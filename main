@@ -296,14 +296,23 @@ function Library:CreateWindow(title)
             if callback then pcall(function() callback(state) end) end
         end)
         
+        local storedCallback = callback
+        
         return {
-            SetValue = function(val)
+            SetValue = function(val, triggerCallback)
                 state = val
                 ToggleBack.BackgroundColor3 = state and Colors.Success or Colors.Surface
                 ToggleKnob.Position = state and UDim2.new(1, -20, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
-                if callback then pcall(function() callback(state) end) end
+                if triggerCallback and storedCallback then 
+                    pcall(function() storedCallback(state) end) 
+                end
             end,
-            GetValue = function() return state end
+            GetValue = function() return state end,
+            TriggerCallback = function()
+                if storedCallback then
+                    pcall(function() storedCallback(state) end)
+                end
+            end
         }
     end
     
@@ -397,16 +406,25 @@ function Library:CreateWindow(title)
             end
         end)
         
+        local storedCallback = callback
+        
         return {
-            SetValue = function(val)
+            SetValue = function(val, triggerCallback)
                 currentValue = math.floor(math.clamp(val, min, max))
                 local pos = (currentValue - min) / (max - min)
                 ValueLabel.Text = tostring(currentValue)
                 Fill.Size = UDim2.new(pos, 0, 1, 0)
                 Knob.Position = UDim2.new(pos, 0, 0.5, 0)
-                if callback then pcall(function() callback(currentValue) end) end
+                if triggerCallback and storedCallback then 
+                    pcall(function() storedCallback(currentValue) end) 
+                end
             end,
-            GetValue = function() return currentValue end
+            GetValue = function() return currentValue end,
+            TriggerCallback = function()
+                if storedCallback then
+                    pcall(function() storedCallback(currentValue) end)
+                end
+            end
         }
     end
     
@@ -520,9 +538,22 @@ function Library:CreateWindow(title)
             end
         end)
         
+        local storedCallback = callback
+        
         return {
             GetKey = function() return currentKey end,
-            SetKey = function(key) currentKey = key KeyButton.Text = key end
+            SetKey = function(key, triggerCallback) 
+                currentKey = key 
+                KeyButton.Text = key 
+                if triggerCallback and storedCallback then
+                    pcall(function() storedCallback(key) end)
+                end
+            end,
+            TriggerCallback = function()
+                if storedCallback then
+                    pcall(function() storedCallback(currentKey) end)
+                end
+            end
         }
     end
     
@@ -760,7 +791,11 @@ function Library:CreateWindow(title)
                 Text = "Config saved: " .. configName;
                 Duration = 2;
             })
-            UpdateConfigList()
+            -- Update list asynchronously to avoid blocking
+            task.spawn(function()
+                task.wait(0.05)
+                UpdateConfigList()
+            end)
         else
             game.StarterGui:SetCore("SendNotification", {
                 Title = "D.R.X";
@@ -783,9 +818,18 @@ function Library:CreateWindow(title)
         
         local data = LoadConfig(configName)
         if data then
+            -- Set all values without triggering callbacks
             for key, element in pairs(Window.ConfigValues) do
                 if data[key] ~= nil then
-                    element.SetValue(data[key])
+                    element.SetValue(data[key], false)
+                end
+            end
+            
+            -- Wait a tiny bit then trigger all callbacks to apply settings
+            task.wait(0.05)
+            for key, element in pairs(Window.ConfigValues) do
+                if data[key] ~= nil and element.TriggerCallback then
+                    element.TriggerCallback()
                 end
             end
             
@@ -815,14 +859,18 @@ function Library:CreateWindow(title)
         end
         
         if DeleteConfig(configName) then
+            configNameBox.Clear()
+            SelectedConfig = nil
             game.StarterGui:SetCore("SendNotification", {
                 Title = "D.R.X";
                 Text = "Config deleted: " .. configName;
                 Duration = 2;
             })
-            configNameBox.Clear()
-            SelectedConfig = nil
-            UpdateConfigList()
+            -- Update list asynchronously to avoid blocking
+            task.spawn(function()
+                task.wait(0.05)
+                UpdateConfigList()
+            end)
         else
             game.StarterGui:SetCore("SendNotification", {
                 Title = "D.R.X";
