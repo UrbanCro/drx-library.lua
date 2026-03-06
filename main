@@ -42,11 +42,6 @@ local function Tween(obj, props, dur, style, dir)
         props):Play()
 end
 
--- ═══════════════════════════════════════════════════
--- FILE SYSTEM — executor-safe wrappers
--- Works with: Synapse X, KRNL, Fluxus, Solara, Wave,
---             Script-Ware, Evon, and most others
--- ═══════════════════════════════════════════════════
 local SaveFolder = "DRX_Configs"
 
 -- Safely check if a function global actually exists and is callable
