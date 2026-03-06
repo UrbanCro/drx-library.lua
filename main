@@ -1,6 +1,16 @@
-local TweenService = game:GetService("TweenService")
-local SoundService = game:GetService("SoundService")
-local CoreGui = game:GetService("CoreGui")
+local TweenService     = game:GetService("TweenService")
+local SoundService     = game:GetService("SoundService")
+local CoreGui          = game:GetService("CoreGui")
+local HttpService      = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
+
+-- ────────────────────────────────────────────────
+-- LOADING SCREEN (20 seconds)
+-- ────────────────────────────────────────────────
+
+if CoreGui:FindFirstChild("DRX_Loading") then
+    CoreGui:FindFirstChild("DRX_Loading"):Destroy()
+end
 
 local LoadingGui = Instance.new("ScreenGui")
 LoadingGui.Name = "DRX_Loading"
@@ -14,6 +24,7 @@ Frame.Position = UDim2.new(0.5, -210, 0.5, -140)
 Frame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 Frame.BorderSizePixel = 0
 Frame.Parent = LoadingGui
+
 Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 16)
 
 local Stroke = Instance.new("UIStroke")
@@ -79,7 +90,7 @@ LoadSound:Destroy()
 LoadingGui:Destroy()
 
 -- ────────────────────────────────────────────────
--- ── Full original D.R.X Library starts here ─────
+-- FULL ORIGINAL D.R.X LIBRARY
 -- ────────────────────────────────────────────────
 
 local Library = {}
@@ -720,10 +731,6 @@ function Library:CreateWindow(title)
             end
         end)
 
-        CreateButton(ConfigTab.Content, "Refresh List", function()
-            -- We'll just re-create the list each time for simplicity
-        end)
-
         local ListFrame = Instance.new("ScrollingFrame")
         ListFrame.Size             = UDim2.new(1, 0, 1, -100)
         ListFrame.Position         = UDim2.new(0, 0, 0, 90)
@@ -776,6 +783,7 @@ function Library:CreateWindow(title)
                         print("Loaded config: " .. cfg)
                     end
                 end).Size = UDim2.new(0, 60, 0, 28)
+
                 CreateButton(Row, "Delete", function()
                     if DeleteConfig(cfg) then
                         print("Deleted config: " .. cfg)
@@ -799,7 +807,7 @@ function Library:CreateWindow(title)
 end
 
 -- ────────────────────────────────────────────────
--- ── Music Player Tab (added after library) ──────
+-- CREATE WINDOW + HOME + MUSIC PLAYER
 -- ────────────────────────────────────────────────
 
 local Window = Library:CreateWindow("D.R.X")
@@ -809,9 +817,8 @@ HomeTab:AddLabel("D.R.X Loaded Successfully")
 HomeTab:AddLabel("Loading screen completed")
 
 local MusicTab = Window:CreateTab("Music Player")
-
 MusicTab:AddLabel("Online Song Player (direct .mp3 links)")
-MusicTab:AddLabel("Use YouTube to MP3 converter or similar")
+MusicTab:AddLabel("Paste direct URL (e.g. catbox.moe, gofile, etc.)")
 
 local SongBox = Instance.new("TextBox")
 SongBox.Size = UDim2.new(1, -24, 0, 38)
@@ -841,9 +848,7 @@ MusicTab:AddButton("Play", function()
 end)
 
 MusicTab:AddButton("Pause", function()
-    if MusicSound.IsPlaying then
-        MusicSound:Pause()
-    end
+    if MusicSound.IsPlaying then MusicSound:Pause() end
 end)
 
 MusicTab:AddButton("Stop", function()
