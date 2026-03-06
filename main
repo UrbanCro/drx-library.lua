@@ -4,8 +4,8 @@ local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local HttpService      = game:GetService("HttpService")
 
-if game:GetService("CoreGui"):FindFirstChild("DRXGUI") then
-    game:GetService("CoreGui"):FindFirstChild("DRXGUI"):Destroy()
+if CoreGui:FindFirstChild("DRXGUI") then
+    CoreGui:FindFirstChild("DRXGUI"):Destroy()
     task.wait(0.1)
 end
 
@@ -136,7 +136,7 @@ function Library:CreateWindow(title)
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.ResetOnSpawn   = false
     ScreenGui.IgnoreGuiInset = true
-    ScreenGui.Parent         = game:GetService("CoreGui")
+    ScreenGui.Parent         = CoreGui
 
     local Main = Instance.new("Frame")
     Main.Name             = "MainContainer"
