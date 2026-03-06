@@ -1,106 +1,11 @@
-local TweenService     = game:GetService("TweenService")
-local SoundService     = game:GetService("SoundService")
-local CoreGui          = game:GetService("CoreGui")
-local HttpService      = game:GetService("HttpService")
-local UserInputService = game:GetService("UserInputService")
-
--- ────────────────────────────────────────────────
--- LOADING SCREEN (20 seconds)
--- ────────────────────────────────────────────────
-
-if CoreGui:FindFirstChild("DRX_Loading") then
-    CoreGui:FindFirstChild("DRX_Loading"):Destroy()
-end
-
-local LoadingGui = Instance.new("ScreenGui")
-LoadingGui.Name = "DRX_Loading"
-LoadingGui.ResetOnSpawn = false
-LoadingGui.IgnoreGuiInset = true
-LoadingGui.Parent = CoreGui
-
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 420, 0, 280)
-Frame.Position = UDim2.new(0.5, -210, 0.5, -140)
-Frame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-Frame.BorderSizePixel = 0
-Frame.Parent = LoadingGui
-
-Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 16)
-
-local Stroke = Instance.new("UIStroke")
-Stroke.Color = Color3.fromRGB(100, 100, 255)
-Stroke.Thickness = 2
-Stroke.Parent = Frame
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 60)
-Title.BackgroundTransparency = 1
-Title.Text = "D.R.X"
-Title.TextColor3 = Color3.fromRGB(100, 100, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 32
-Title.Parent = Frame
-
-local Status = Instance.new("TextLabel")
-Status.Size = UDim2.new(1, 0, 0, 40)
-Status.Position = UDim2.new(0, 0, 0, 70)
-Status.BackgroundTransparency = 1
-Status.Text = "Initializing... 20 seconds"
-Status.TextColor3 = Color3.fromRGB(156, 163, 175)
-Status.Font = Enum.Font.Gotham
-Status.TextSize = 18
-Status.Parent = Frame
-
-local ProgBG = Instance.new("Frame")
-ProgBG.Size = UDim2.new(0.85, 0, 0, 25)
-ProgBG.Position = UDim2.new(0.075, 0, 0.65, 0)
-ProgBG.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
-ProgBG.BorderSizePixel = 0
-ProgBG.Parent = Frame
-Instance.new("UICorner", ProgBG).CornerRadius = UDim.new(0, 12)
-
-local Fill = Instance.new("Frame")
-Fill.Size = UDim2.new(0, 0, 1, 0)
-Fill.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
-Fill.BorderSizePixel = 0
-Fill.Parent = ProgBG
-Instance.new("UICorner", Fill).CornerRadius = UDim.new(0, 12)
-
-local LoadSound = Instance.new("Sound")
-LoadSound.SoundId = "rbxassetid://1847661667"
-LoadSound.Volume = 0.55
-LoadSound.Looped = false
-LoadSound.Parent = SoundService
-LoadSound:Play()
-
-TweenService:Create(Fill, TweenInfo.new(20, Enum.EasingStyle.Linear), {Size = UDim2.new(1,0,1,0)}):Play()
-
-spawn(function()
-    for i = 20, 1, -1 do
-        Status.Text = "Initializing... " .. i .. " seconds"
-        task.wait(1)
-    end
-    Status.Text = "Ready!"
-end)
-
-task.wait(20)
-
-LoadSound:Stop()
-LoadSound:Destroy()
-LoadingGui:Destroy()
-
--- ────────────────────────────────────────────────
--- FULL ORIGINAL D.R.X LIBRARY
--- ────────────────────────────────────────────────
-
 local Library = {}
 
 local TweenService     = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local HttpService      = game:GetService("HttpService")
 
-if CoreGui:FindFirstChild("DRXGUI") then
-    CoreGui:FindFirstChild("DRXGUI"):Destroy()
+if game:GetService("CoreGui"):FindFirstChild("DRXGUI") then
+    game:GetService("CoreGui"):FindFirstChild("DRXGUI"):Destroy()
     task.wait(0.1)
 end
 
@@ -231,7 +136,7 @@ function Library:CreateWindow(title)
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.ResetOnSpawn   = false
     ScreenGui.IgnoreGuiInset = true
-    ScreenGui.Parent         = CoreGui
+    ScreenGui.Parent         = game:GetService("CoreGui")
 
     local Main = Instance.new("Frame")
     Main.Name             = "MainContainer"
@@ -731,6 +636,10 @@ function Library:CreateWindow(title)
             end
         end)
 
+        CreateButton(ConfigTab.Content, "Refresh List", function()
+            -- We'll just re-create the list each time for simplicity
+        end)
+
         local ListFrame = Instance.new("ScrollingFrame")
         ListFrame.Size             = UDim2.new(1, 0, 1, -100)
         ListFrame.Position         = UDim2.new(0, 0, 0, 90)
@@ -805,60 +714,3 @@ function Library:CreateWindow(title)
 
     return Window
 end
-
--- ────────────────────────────────────────────────
--- CREATE WINDOW + HOME + MUSIC PLAYER
--- ────────────────────────────────────────────────
-
-local Window = Library:CreateWindow("D.R.X")
-
-local HomeTab = Window:CreateTab("Home")
-HomeTab:AddLabel("D.R.X Loaded Successfully")
-HomeTab:AddLabel("Loading screen completed")
-
-local MusicTab = Window:CreateTab("Music Player")
-MusicTab:AddLabel("Online Song Player (direct .mp3 links)")
-MusicTab:AddLabel("Paste direct URL (e.g. catbox.moe, gofile, etc.)")
-
-local SongBox = Instance.new("TextBox")
-SongBox.Size = UDim2.new(1, -24, 0, 38)
-SongBox.Position = UDim2.new(0, 12, 0, 40)
-SongBox.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
-SongBox.BorderSizePixel = 0
-SongBox.Font = Enum.Font.Gotham
-SongBox.PlaceholderText = "https://files.catbox.moe/ahidi9.mp3"
-SongBox.Text = ""
-SongBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-SongBox.TextSize = 14
-SongBox.ClearTextOnFocus = false
-SongBox.Parent = MusicTab.Content
-Corner(SongBox, 8)
-
-local MusicSound = Instance.new("Sound")
-MusicSound.Volume = 0.7
-MusicSound.Looped = true
-MusicSound.Parent = SoundService
-
-MusicTab:AddButton("Play", function()
-    local url = SongBox.Text
-    if url and url:match("^https?://") then
-        MusicSound.SoundId = url
-        MusicSound:Play()
-    end
-end)
-
-MusicTab:AddButton("Pause", function()
-    if MusicSound.IsPlaying then MusicSound:Pause() end
-end)
-
-MusicTab:AddButton("Stop", function()
-    MusicSound:Stop()
-end)
-
-MusicTab:AddSlider("Volume", 0, 2, 0.7, function(v)
-    MusicSound.Volume = v
-end)
-
-Window:InitializeConfigTab()
-
-print("D.R.X fully loaded with loading screen + music player")
