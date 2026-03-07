@@ -166,18 +166,28 @@ function Library:CreateWindow(title, options)
     Tw(blurFx, {Size = 28}, 1.2)
 
     -- ─── Load Music ────────────────────────────
-    local loadMusic = nil
-    if musicId then
-        loadMusic = Instance.new("Sound")
-        loadMusic.SoundId  = musicId
-        loadMusic.Volume   = 0.55
-        loadMusic.Looped   = true
-        loadMusic.RollOffMaxDistance = 99999
-        if not pcall(function() loadMusic.Parent = workspace end) then
-            loadMusic.Parent = LocalPlayer.PlayerGui
-        end
-        loadMusic:Play()
+    -- Songs hardcoded into the library — always plays on any game.
+    -- These are free Roblox audio assets. Swap IDs to whatever you upload.
+    -- To use your own: upload your MP3 at create.roblox.com/store/audio
+    -- then replace the ID in this list.
+    local LIBRARY_SONGS = {
+        "rbxassetid://1843673780",   -- Phonk / dark ambient (free asset)
+        "rbxassetid://1837853995",   -- Lo-fi chill
+        "rbxassetid://1843911023",   -- Dark synth
+    }
+    local pickedSong  = LIBRARY_SONGS[math.random(1, #LIBRARY_SONGS)]
+    -- Allow the user to override with their own ID via options.MusicId
+    local songToPlay  = musicId or pickedSong
+
+    local loadMusic = Instance.new("Sound")
+    loadMusic.SoundId              = songToPlay
+    loadMusic.Volume               = 0.55
+    loadMusic.Looped               = true
+    loadMusic.RollOffMaxDistance   = 99999
+    if not pcall(function() loadMusic.Parent = workspace end) then
+        loadMusic.Parent = LocalPlayer.PlayerGui
     end
+    loadMusic:Play()
 
     -- ════════════════════════════════════════════
     -- LOADING SCREEN UI
@@ -201,7 +211,7 @@ function Library:CreateWindow(title, options)
 
     -- Center card
     local Card = Instance.new("Frame")
-    Card.Size             = UDim2.new(0, 540, 0, 340)
+    Card.Size             = UDim2.new(0, 540, 0, 360)
     Card.AnchorPoint      = Vector2.new(0.5, 0.5)
     Card.Position         = UDim2.new(0.5, 0, 0.5, 0)
     Card.BackgroundColor3 = C.Surface
@@ -301,14 +311,14 @@ function Library:CreateWindow(title, options)
 
     -- Completed-steps list area
     local StepBox = Instance.new("Frame")
-    StepBox.Size             = UDim2.new(1, -60, 0, 80)
-    StepBox.Position         = UDim2.new(0, 30, 0, 210)
+    StepBox.Size             = UDim2.new(1, -60, 0, 100)
+    StepBox.Position         = UDim2.new(0, 30, 0, 215)
     StepBox.BackgroundTransparency = 1
     StepBox.BorderSizePixel  = 0
     StepBox.ZIndex           = 203
     StepBox.Parent           = Card
     local StepLL = Instance.new("UIListLayout")
-    StepLL.Padding   = UDim.new(0, 5)
+    StepLL.Padding   = UDim.new(0, 6)
     StepLL.SortOrder = Enum.SortOrder.LayoutOrder
     StepLL.Parent    = StepBox
 
@@ -1063,11 +1073,9 @@ function Library:CreateWindow(title, options)
             Tw(blurFx, {Size = 0}, 0.9)
             task.wait(1)
             pcall(function() blurFx:Destroy() end)
-            if loadMusic then
-                Tw(loadMusic, {Volume = 0}, 0.5)
-                task.wait(0.6)
-                pcall(function() loadMusic:Stop() loadMusic:Destroy() end)
-            end
+            Tw(loadMusic, {Volume = 0}, 0.5)
+            task.wait(0.6)
+            pcall(function() loadMusic:Stop() loadMusic:Destroy() end)
             return  -- stop — never show main menu
         end
 
@@ -1100,7 +1108,7 @@ function Library:CreateWindow(title, options)
 
             -- Add a ✓ line to the completed-steps box
             local Check = Instance.new("TextLabel")
-            Check.Size               = UDim2.new(1, 0, 0, 18)
+            Check.Size               = UDim2.new(1, 0, 0, 20)
             Check.BackgroundTransparency = 1
             Check.Font               = Enum.Font.Gotham
             Check.Text               = "✓  "..step.step
@@ -1109,9 +1117,12 @@ function Library:CreateWindow(title, options)
             Check.TextXAlignment     = Enum.TextXAlignment.Left
             Check.LayoutOrder        = prevPct
             Check.Parent             = StepBox
-            -- Trim to last 4 visible rows
-            local kids = StepBox:GetChildren()
-            if #kids > 5 then kids[1]:Destroy() end
+            -- Trim to last 4 label rows only (ignore UIListLayout child)
+            local labelKids = {}
+            for _, ch in ipairs(StepBox:GetChildren()) do
+                if ch:IsA("TextLabel") then table.insert(labelKids, ch) end
+            end
+            if #labelKids > 4 then labelKids[1]:Destroy() end
         end
 
         task.wait(0.35)
@@ -1130,11 +1141,9 @@ function Library:CreateWindow(title, options)
         pcall(function() blurFx:Destroy() end)
 
         -- ── Fade out music ──────────────────────
-        if loadMusic then
-            Tw(loadMusic, {Volume = 0}, 0.85)
-            task.wait(0.95)
-            pcall(function() loadMusic:Stop() loadMusic:Destroy() end)
-        end
+        Tw(loadMusic, {Volume = 0}, 0.85)
+        task.wait(0.95)
+        pcall(function() loadMusic:Stop() loadMusic:Destroy() end)
 
         -- ── Build settings tab ──────────────────
         BuildSettingsTab()
