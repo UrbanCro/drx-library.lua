@@ -80,6 +80,7 @@ end
 -- ════════════════════════════════════════════════
 -- CONFIG FILE SYSTEM
 -- ════════════════════════════════════════════════
+-- FOLDER is set inside CreateWindow once the PlaceId is known
 local FOLDER = "DRX_Configs"
 
 local function EnsureFolder()
@@ -123,14 +124,23 @@ end
 -- ════════════════════════════════════════════════
 --[[
   options = {
-    MusicId = "rbxassetid://XXXXXXXXXX",  -- audio to play during loading
-    Logo    = "D · R · X",               -- big title on loading screen
+    MusicId     = "rbxassetid://XXXXXXXXXX",  -- audio to play during loading
+    Logo        = "D · R · X",               -- big title on loading screen
+    PlaceId     = 0,                          -- lock to this Roblox PlaceId (0 = any game)
   }
 --]]
 function Library:CreateWindow(title, options)
     options = options or {}
-    local musicId  = options.MusicId or nil
-    local logoText = options.Logo    or "D · R · X"
+    local musicId      = options.MusicId  or nil
+    local logoText     = options.Logo     or "D · R · X"
+    local allowedPlace = options.PlaceId  or 0   -- 0 means no restriction
+
+    -- Set config folder scoped to this game so configs don't bleed between games
+    if allowedPlace ~= 0 then
+        FOLDER = "DRX_Configs_"..tostring(allowedPlace)
+    else
+        FOLDER = "DRX_Configs"
+    end
 
     local Win      = {}
     Win.Tabs       = {}
@@ -191,7 +201,7 @@ function Library:CreateWindow(title, options)
 
     -- Center card
     local Card = Instance.new("Frame")
-    Card.Size             = UDim2.new(0, 540, 0, 320)
+    Card.Size             = UDim2.new(0, 540, 0, 340)
     Card.AnchorPoint      = Vector2.new(0.5, 0.5)
     Card.Position         = UDim2.new(0.5, 0, 0.5, 0)
     Card.BackgroundColor3 = C.Surface
@@ -291,14 +301,14 @@ function Library:CreateWindow(title, options)
 
     -- Completed-steps list area
     local StepBox = Instance.new("Frame")
-    StepBox.Size             = UDim2.new(1, -60, 0, 72)
+    StepBox.Size             = UDim2.new(1, -60, 0, 80)
     StepBox.Position         = UDim2.new(0, 30, 0, 210)
     StepBox.BackgroundTransparency = 1
     StepBox.BorderSizePixel  = 0
     StepBox.ZIndex           = 203
     StepBox.Parent           = Card
     local StepLL = Instance.new("UIListLayout")
-    StepLL.Padding   = UDim.new(0, 2)
+    StepLL.Padding   = UDim.new(0, 5)
     StepLL.SortOrder = Enum.SortOrder.LayoutOrder
     StepLL.Parent    = StepBox
 
@@ -878,7 +888,7 @@ function Library:CreateWindow(title, options)
             return B
         end
 
-        -- SAVE
+        -- SAVE  (also overwrites if the name already exists — resave behaviour built in)
         ActionBtn("💾 Save",    C.Elevated, 1, function()
             local name = nameBox.GetText():match("^%s*(.-)%s*$")
             if name == "" then return end
@@ -902,17 +912,8 @@ function Library:CreateWindow(title, options)
             end
         end)
 
-        -- RESAVE (overwrite selected with current values)
-        ActionBtn("♻ Resave",  C.Elevated, 3, function()
-            local name = selName or nameBox.GetText():match("^%s*(.-)%s*$")
-            if not name or name == "" then return end
-            local data = {}
-            for k, e in pairs(Win._cfg) do data[k] = e.GetValue() end
-            if SaveCfg(name, data) then RefreshList() end
-        end)
-
         -- DELETE
-        ActionBtn("🗑 Delete",  C.Elevated, 4, function()
+        ActionBtn("🗑 Delete",  C.Elevated, 3, function()
             local name = selName or nameBox.GetText():match("^%s*(.-)%s*$")
             if not name or name == "" then return end
             if DeleteCfg(name) then
@@ -1034,6 +1035,42 @@ function Library:CreateWindow(title, options)
     }
 
     task.spawn(function()
+        -- ── Game lock check ─────────────────────
+        if allowedPlace ~= 0 and game.PlaceId ~= allowedPlace then
+            -- Wrong game — show error state on loading screen and halt
+            PctLbl.Text        = "✗"
+            PctLbl.TextColor3  = C.Error
+            StatusLbl.Text     = "Wrong game. Execute Project Delta only."
+            StatusLbl.TextColor3 = C.Error
+            BarFill.BackgroundColor3 = C.Error
+            Tw(BarFill, {Size = UDim2.new(1, 0, 1, 0)}, 0.4)
+
+            -- Show big red message on the card
+            local ErrLbl = Instance.new("TextLabel")
+            ErrLbl.Size               = UDim2.new(1, -40, 0, 50)
+            ErrLbl.Position           = UDim2.new(0, 20, 0, 210)
+            ErrLbl.BackgroundTransparency = 1
+            ErrLbl.Font               = Enum.Font.GothamBold
+            ErrLbl.Text               = "✗  Wrong Game\nExecute on Project Delta only."
+            ErrLbl.TextColor3         = C.Error
+            ErrLbl.TextSize           = 16
+            ErrLbl.TextWrapped        = true
+            ErrLbl.ZIndex             = 203
+            ErrLbl.Parent             = Card
+
+            -- Fade blur back out since we won't proceed
+            task.wait(3)
+            Tw(blurFx, {Size = 0}, 0.9)
+            task.wait(1)
+            pcall(function() blurFx:Destroy() end)
+            if loadMusic then
+                Tw(loadMusic, {Volume = 0}, 0.5)
+                task.wait(0.6)
+                pcall(function() loadMusic:Stop() loadMusic:Destroy() end)
+            end
+            return  -- stop — never show main menu
+        end
+
         local prevPct = 0
 
         for _, step in ipairs(Steps) do
@@ -1063,16 +1100,16 @@ function Library:CreateWindow(title, options)
 
             -- Add a ✓ line to the completed-steps box
             local Check = Instance.new("TextLabel")
-            Check.Size               = UDim2.new(1, 0, 0, 14)
+            Check.Size               = UDim2.new(1, 0, 0, 18)
             Check.BackgroundTransparency = 1
             Check.Font               = Enum.Font.Gotham
             Check.Text               = "✓  "..step.step
             Check.TextColor3         = C.Success
-            Check.TextSize           = 11
+            Check.TextSize           = 12
             Check.TextXAlignment     = Enum.TextXAlignment.Left
             Check.LayoutOrder        = prevPct
             Check.Parent             = StepBox
-            -- Trim to last 4 rows
+            -- Trim to last 4 visible rows
             local kids = StepBox:GetChildren()
             if #kids > 5 then kids[1]:Destroy() end
         end
