@@ -135,6 +135,7 @@ function Library:CreateWindow(title, options)
     local Win      = {}
     Win.Tabs       = {}
     Win._cfg       = {}
+    Win.Loaded     = false   -- false during loading screen, true after
     local _order   = 0
     local function NextOrder() _order = _order + 1 return _order end
 
@@ -870,7 +871,7 @@ function Library:CreateWindow(title, options)
             B.LayoutOrder      = order
             B.Parent           = BtnRow
             Corner(B, 7)
-            local hov = col:lerp(Color3.new(1,1,1), 0.18)
+            local hov = C.Primary
             B.MouseEnter:Connect(function()  Tw(B, {BackgroundColor3 = hov}) end)
             B.MouseLeave:Connect(function()  Tw(B, {BackgroundColor3 = col}) end)
             B.MouseButton1Click:Connect(function() if cb then pcall(cb) end end)
@@ -878,7 +879,7 @@ function Library:CreateWindow(title, options)
         end
 
         -- SAVE
-        ActionBtn("💾 Save", C.Success, 1, function()
+        ActionBtn("💾 Save",    C.Elevated, 1, function()
             local name = nameBox.GetText():match("^%s*(.-)%s*$")
             if name == "" then return end
             local data = {}
@@ -887,7 +888,7 @@ function Library:CreateWindow(title, options)
         end)
 
         -- LOAD
-        ActionBtn("📂 Load", C.Primary, 2, function()
+        ActionBtn("📂 Load",    C.Elevated, 2, function()
             local name = selName or nameBox.GetText():match("^%s*(.-)%s*$")
             if not name or name == "" then return end
             local data = LoadCfg(name)
@@ -902,7 +903,7 @@ function Library:CreateWindow(title, options)
         end)
 
         -- RESAVE (overwrite selected with current values)
-        ActionBtn("♻ Resave", C.Warn, 3, function()
+        ActionBtn("♻ Resave",  C.Elevated, 3, function()
             local name = selName or nameBox.GetText():match("^%s*(.-)%s*$")
             if not name or name == "" then return end
             local data = {}
@@ -911,7 +912,7 @@ function Library:CreateWindow(title, options)
         end)
 
         -- DELETE
-        ActionBtn("🗑 Delete", C.Error, 4, function()
+        ActionBtn("🗑 Delete",  C.Elevated, 4, function()
             local name = selName or nameBox.GetText():match("^%s*(.-)%s*$")
             if not name or name == "" then return end
             if DeleteCfg(name) then
@@ -1102,6 +1103,7 @@ function Library:CreateWindow(title, options)
         BuildSettingsTab()
 
         -- ── Reveal main window ──────────────────
+        Win.Loaded                  = true   -- signal to outside code: safe to show ESP
         Main.BackgroundTransparency = 1
         Main.Visible                = true
         Tw(Main, {BackgroundTransparency = 0}, 0.4)
