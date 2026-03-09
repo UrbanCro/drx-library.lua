@@ -139,9 +139,10 @@ function Library:CreateWindow(title, options)
         for _, id in ipairs(allowedPlaces) do placeSet[id] = true end
     end
 
-    -- Set config folder scoped to first PlaceId so configs stay per-game
-    if allowedPlaces and #allowedPlaces > 0 then
-        FOLDER = "DRX_Configs_"..tostring(allowedPlaces[1])
+    -- Config folder: use ConfigFolder option if given, else shared default
+    -- Both allowed servers share the same folder so configs work across them
+    if options.ConfigFolder then
+        FOLDER = options.ConfigFolder
     else
         FOLDER = "DRX_Configs"
     end
@@ -1027,32 +1028,102 @@ function Library:CreateWindow(title, options)
     task.spawn(function()
         -- ── Game lock check ─────────────────────
         if allowedPlaces and not placeSet[game.PlaceId] then
-            -- Wrong game — show error state on loading screen and halt
-            PctLbl.Text        = "✗"
-            PctLbl.TextColor3  = C.Error
-            StatusLbl.Text     = "Wrong game. Execute on Project Delta only."
-            StatusLbl.TextColor3 = C.Error
+            -- Hide all progress elements
+            PctLbl.Visible    = false
+            StatusLbl.Visible = false
+            StepBox.Visible   = false
+            BarTrack.Visible  = false
+            LogoLbl.Visible   = false
+            SubLbl.Visible    = false
+
+            -- Red animated border on card
+            local cardStroke = Card:FindFirstChildOfClass("UIStroke")
+            if cardStroke then
+                Tw(cardStroke, {Color = C.Error, Thickness = 2}, 0.5)
+            end
+
+            -- Red circle icon
+            local ErrCircle = Instance.new("Frame")
+            ErrCircle.Size               = UDim2.new(0, 72, 0, 72)
+            ErrCircle.AnchorPoint        = Vector2.new(0.5, 0)
+            ErrCircle.Position           = UDim2.new(0.5, 0, 0, 52)
+            ErrCircle.BackgroundColor3   = C.Error
+            ErrCircle.BackgroundTransparency = 0.1
+            ErrCircle.BorderSizePixel    = 0
+            ErrCircle.ZIndex             = 204
+            ErrCircle.Parent             = Card
+            Corner(ErrCircle, 36)
+            local ErrX = Instance.new("TextLabel", ErrCircle)
+            ErrX.Size               = UDim2.new(1,0,1,0)
+            ErrX.BackgroundTransparency = 1
+            ErrX.Font               = Enum.Font.GothamBold
+            ErrX.Text               = "✕"
+            ErrX.TextColor3         = Color3.fromRGB(255,255,255)
+            ErrX.TextSize           = 34
+            ErrX.ZIndex             = 205
+
+            -- Title
+            local ErrTitle = Instance.new("TextLabel")
+            ErrTitle.Size               = UDim2.new(1, -60, 0, 34)
+            ErrTitle.AnchorPoint        = Vector2.new(0.5, 0)
+            ErrTitle.Position           = UDim2.new(0.5, 0, 0, 142)
+            ErrTitle.BackgroundTransparency = 1
+            ErrTitle.Font               = Enum.Font.GothamBold
+            ErrTitle.Text               = "Wrong Game"
+            ErrTitle.TextColor3         = C.Error
+            ErrTitle.TextSize           = 24
+            ErrTitle.ZIndex             = 204
+            ErrTitle.Parent             = Card
+
+            -- Sub message
+            local ErrSub = Instance.new("TextLabel")
+            ErrSub.Size               = UDim2.new(1, -80, 0, 44)
+            ErrSub.AnchorPoint        = Vector2.new(0.5, 0)
+            ErrSub.Position           = UDim2.new(0.5, 0, 0, 184)
+            ErrSub.BackgroundTransparency = 1
+            ErrSub.Font               = Enum.Font.Gotham
+            ErrSub.Text               = "This script only runs on\nProject Delta servers."
+            ErrSub.TextColor3         = C.TxtSub
+            ErrSub.TextSize           = 14
+            ErrSub.TextWrapped        = true
+            ErrSub.ZIndex             = 204
+            ErrSub.Parent             = Card
+
+            -- Divider
+            local ErrDiv = Instance.new("Frame")
+            ErrDiv.Size               = UDim2.new(1, -80, 0, 1)
+            ErrDiv.AnchorPoint        = Vector2.new(0.5, 0)
+            ErrDiv.Position           = UDim2.new(0.5, 0, 0, 242)
+            ErrDiv.BackgroundColor3   = C.Border
+            ErrDiv.BorderSizePixel    = 0
+            ErrDiv.ZIndex             = 204
+            ErrDiv.Parent             = Card
+
+            -- Place ID debug line
+            local ErrCode = Instance.new("TextLabel")
+            ErrCode.Size               = UDim2.new(1, -80, 0, 18)
+            ErrCode.AnchorPoint        = Vector2.new(0.5, 0)
+            ErrCode.Position           = UDim2.new(0.5, 0, 0, 252)
+            ErrCode.BackgroundTransparency = 1
+            ErrCode.Font               = Enum.Font.GothamMono
+            ErrCode.Text               = "PlaceId: "..tostring(game.PlaceId).."  •  E_PLACE_LOCK"
+            ErrCode.TextColor3         = Color3.fromRGB(65, 65, 85)
+            ErrCode.TextSize           = 10
+            ErrCode.ZIndex             = 204
+            ErrCode.Parent             = Card
+
+            -- Pulse the error bar red
+            BarTrack.Visible = true
             BarFill.BackgroundColor3 = C.Error
-            Tw(BarFill, {Size = UDim2.new(1, 0, 1, 0)}, 0.4)
+            local bg2 = BarFill:FindFirstChildOfClass("UIGradient")
+            if bg2 then bg2:Destroy() end
+            Tw(BarFill, {Size = UDim2.new(1, 0, 1, 0)}, 0.8, Enum.EasingStyle.Cubic)
 
-            -- Show big red message on the card
-            local ErrLbl = Instance.new("TextLabel")
-            ErrLbl.Size               = UDim2.new(1, -40, 0, 50)
-            ErrLbl.Position           = UDim2.new(0, 20, 0, 210)
-            ErrLbl.BackgroundTransparency = 1
-            ErrLbl.Font               = Enum.Font.GothamBold
-            ErrLbl.Text               = "✗  Wrong Game\nExecute on Project Delta only."
-            ErrLbl.TextColor3         = C.Error
-            ErrLbl.TextSize           = 16
-            ErrLbl.TextWrapped        = true
-            ErrLbl.ZIndex             = 203
-            ErrLbl.Parent             = Card
-
-            task.wait(3)
+            task.wait(5)
             Tw(blurFx, {Size = 0}, 0.9)
             task.wait(1)
             pcall(function() blurFx:Destroy() end)
-            return  -- stop — never show main menu
+            return
         end
 
         local prevPct = 0
