@@ -168,7 +168,7 @@ function Library:CreateWindow(title, options)
     local blurFx = Instance.new("BlurEffect")
     blurFx.Size   = 0
     blurFx.Parent = Lighting
-    Tw(blurFx, {Size = 28}, 1.2)
+    Tw(blurFx, {Size = 18}, 1.2)   -- 18 = visible blur without going too dark
 
     -- ════════════════════════════════════════════
     -- LOADING SCREEN UI
@@ -183,124 +183,137 @@ function Library:CreateWindow(title, options)
     LoadFrame.ZIndex                 = 200
     LoadFrame.Parent                 = Gui
 
-    -- Very subtle dark vignette around the card so edges aren't harsh
+    -- Light semi-transparent overlay — lets blurred world show through clearly
     local Vignette = Instance.new("Frame")
     Vignette.Size                   = UDim2.new(1, 0, 1, 0)
     Vignette.BackgroundColor3       = Color3.fromRGB(0, 0, 0)
-    Vignette.BackgroundTransparency = 0.55
+    Vignette.BackgroundTransparency = 0.72   -- lighter: game world visible behind
     Vignette.BorderSizePixel        = 0
     Vignette.ZIndex                 = 200
     Vignette.Parent                 = LoadFrame
-    local Overlay = Vignette  -- alias for fade-out reference
+    local Overlay = Vignette
 
-    -- Center card — floats on the blurred world
+    -- Center card — clean glass-like panel floating on blurred world
     local Card = Instance.new("Frame")
-    Card.Size             = UDim2.new(0, 500, 0, 360)
+    Card.Size             = UDim2.new(0, 480, 0, 340)
     Card.AnchorPoint      = Vector2.new(0.5, 0.5)
     Card.Position         = UDim2.new(0.5, 0, 0.5, 0)
-    Card.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
-    Card.BackgroundTransparency = 0.08
+    Card.BackgroundColor3 = Color3.fromRGB(18, 18, 26)
+    Card.BackgroundTransparency = 0.05
     Card.BorderSizePixel  = 0
     Card.ZIndex           = 202
     Card.Parent           = LoadFrame
-    Corner(Card, 20)
-    Stroke(Card, C.Primary, 1.5)
+    Corner(Card, 16)
+    Stroke(Card, Color3.fromRGB(60, 60, 90), 1)   -- subtle border, no blue bar
 
-    -- Animated top accent bar
-    local AccentBar = Instance.new("Frame")
-    AccentBar.Size             = UDim2.new(1, 0, 0, 3)
-    AccentBar.BackgroundColor3 = C.Primary
-    AccentBar.BorderSizePixel  = 0
-    AccentBar.ZIndex           = 203
-    AccentBar.Parent           = Card
-    Corner(AccentBar, 2)
-    local ag = Instance.new("UIGradient", AccentBar)
-    ag.Color = ColorSequence.new({
+    -- Left color strip (replaces the top bar that was causing issues)
+    local Strip = Instance.new("Frame")
+    Strip.Size             = UDim2.new(0, 3, 1, -32)
+    Strip.Position         = UDim2.new(0, 0, 0, 16)
+    Strip.BackgroundColor3 = C.Primary
+    Strip.BorderSizePixel  = 0
+    Strip.ZIndex           = 203
+    Strip.Parent           = Card
+    Corner(Strip, 2)
+    local sg = Instance.new("UIGradient", Strip)
+    sg.Rotation = 90
+    sg.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0,   Color3.fromRGB(80,  80,  255)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 80,  255)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(160, 80,  255)),
         ColorSequenceKeypoint.new(1,   Color3.fromRGB(80,  200, 255)),
     })
 
-    -- Icon badge above logo
+    -- Icon badge
     local Badge = Instance.new("Frame")
-    Badge.Size               = UDim2.new(0, 44, 0, 44)
-    Badge.AnchorPoint        = Vector2.new(0.5, 0)
-    Badge.Position           = UDim2.new(0.5, 0, 0, 20)
+    Badge.Size               = UDim2.new(0, 40, 0, 40)
+    Badge.AnchorPoint        = Vector2.new(0, 0)
+    Badge.Position           = UDim2.new(0, 20, 0, 20)
     Badge.BackgroundColor3   = C.Primary
-    Badge.BackgroundTransparency = 0.2
+    Badge.BackgroundTransparency = 0.25
     Badge.BorderSizePixel    = 0
     Badge.ZIndex             = 203
     Badge.Parent             = Card
-    Corner(Badge, 12)
+    Corner(Badge, 10)
     local BadgeIcon = Instance.new("TextLabel", Badge)
     BadgeIcon.Size               = UDim2.new(1,0,1,0)
     BadgeIcon.BackgroundTransparency = 1
     BadgeIcon.Font               = Enum.Font.GothamBold
-    BadgeIcon.Text               = "⬡"
+    BadgeIcon.Text               = "DX"
     BadgeIcon.TextColor3         = Color3.fromRGB(255,255,255)
-    BadgeIcon.TextSize           = 22
+    BadgeIcon.TextSize           = 14
     BadgeIcon.ZIndex             = 204
 
-    -- Logo
+    -- Logo (right of badge)
     local LogoLbl = Instance.new("TextLabel")
-    LogoLbl.Size               = UDim2.new(1, -40, 0, 38)
-    LogoLbl.AnchorPoint        = Vector2.new(0.5, 0)
-    LogoLbl.Position           = UDim2.new(0.5, 0, 0, 72)
+    LogoLbl.Size               = UDim2.new(1, -80, 0, 24)
+    LogoLbl.Position           = UDim2.new(0, 70, 0, 20)
     LogoLbl.BackgroundTransparency = 1
     LogoLbl.Font               = Enum.Font.GothamBold
     LogoLbl.Text               = logoText
     LogoLbl.TextColor3         = C.TxtHi
-    LogoLbl.TextSize           = 26
+    LogoLbl.TextXAlignment     = Enum.TextXAlignment.Left
+    LogoLbl.TextSize           = 20
     LogoLbl.ZIndex             = 203
     LogoLbl.Parent             = Card
 
-    -- Sub-title / script name
+    -- Sub-title
     local SubLbl = Instance.new("TextLabel")
-    SubLbl.Size               = UDim2.new(1, -40, 0, 18)
-    SubLbl.AnchorPoint        = Vector2.new(0.5, 0)
-    SubLbl.Position           = UDim2.new(0.5, 0, 0, 114)
+    SubLbl.Size               = UDim2.new(1, -80, 0, 16)
+    SubLbl.Position           = UDim2.new(0, 70, 0, 46)
     SubLbl.BackgroundTransparency = 1
     SubLbl.Font               = Enum.Font.Gotham
-    SubLbl.Text               = title.."  •  Loading"
+    SubLbl.Text               = title.."  •  Loading..."
     SubLbl.TextColor3         = C.TxtSub
-    SubLbl.TextSize           = 12
+    SubLbl.TextXAlignment     = Enum.TextXAlignment.Left
+    SubLbl.TextSize           = 11
     SubLbl.ZIndex             = 203
     SubLbl.Parent             = Card
 
-    -- Divider line under sub-title
+    -- Divider
     local Divider = Instance.new("Frame")
-    Divider.Size             = UDim2.new(1, -80, 0, 1)
-    Divider.AnchorPoint      = Vector2.new(0.5, 0)
-    Divider.Position         = UDim2.new(0.5, 0, 0, 141)
-    Divider.BackgroundColor3 = C.Border
+    Divider.Size             = UDim2.new(1, -30, 0, 1)
+    Divider.Position         = UDim2.new(0, 15, 0, 76)
+    Divider.BackgroundColor3 = Color3.fromRGB(38, 38, 55)
     Divider.BorderSizePixel  = 0
     Divider.ZIndex           = 203
     Divider.Parent           = Card
 
     -- Percentage counter
     local PctLbl = Instance.new("TextLabel")
-    PctLbl.Size               = UDim2.new(0, 60, 0, 30)
+    PctLbl.Size               = UDim2.new(0, 52, 0, 28)
     PctLbl.AnchorPoint        = Vector2.new(1, 0)
-    PctLbl.Position           = UDim2.new(1, -30, 0, 155)
+    PctLbl.Position           = UDim2.new(1, -18, 0, 86)
     PctLbl.BackgroundTransparency = 1
     PctLbl.Font               = Enum.Font.GothamBold
     PctLbl.Text               = "0%"
     PctLbl.TextColor3         = C.Primary
     PctLbl.TextXAlignment     = Enum.TextXAlignment.Right
-    PctLbl.TextSize           = 18
+    PctLbl.TextSize           = 16
     PctLbl.ZIndex             = 203
     PctLbl.Parent             = Card
 
+    -- Status line
+    local StatusLbl = Instance.new("TextLabel")
+    StatusLbl.Size               = UDim2.new(1, -90, 0, 16)
+    StatusLbl.Position           = UDim2.new(0, 18, 0, 92)
+    StatusLbl.BackgroundTransparency = 1
+    StatusLbl.Font               = Enum.Font.Gotham
+    StatusLbl.Text               = "Initializing..."
+    StatusLbl.TextColor3         = C.TxtSub
+    StatusLbl.TextXAlignment     = Enum.TextXAlignment.Left
+    StatusLbl.TextSize           = 11
+    StatusLbl.ZIndex             = 203
+    StatusLbl.Parent             = Card
+
     -- Progress track
     local BarTrack = Instance.new("Frame")
-    BarTrack.Size             = UDim2.new(1, -60, 0, 5)
-    BarTrack.AnchorPoint      = Vector2.new(0.5, 0)
-    BarTrack.Position         = UDim2.new(0.5, 0, 0, 192)
-    BarTrack.BackgroundColor3 = C.Elevated
+    BarTrack.Size             = UDim2.new(1, -36, 0, 4)
+    BarTrack.Position         = UDim2.new(0, 18, 0, 114)
+    BarTrack.BackgroundColor3 = Color3.fromRGB(32, 32, 46)
     BarTrack.BorderSizePixel  = 0
     BarTrack.ZIndex           = 203
     BarTrack.Parent           = Card
-    Corner(BarTrack, 3)
+    Corner(BarTrack, 2)
 
     -- Progress fill
     local BarFill = Instance.new("Frame")
@@ -309,50 +322,35 @@ function Library:CreateWindow(title, options)
     BarFill.BorderSizePixel  = 0
     BarFill.ZIndex           = 204
     BarFill.Parent           = BarTrack
-    Corner(BarFill, 3)
+    Corner(BarFill, 2)
     local bg = Instance.new("UIGradient", BarFill)
     bg.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(80,  80,  255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(160, 90,  255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(140, 80,  255)),
     })
-
-    -- Status line (current step text)
-    local StatusLbl = Instance.new("TextLabel")
-    StatusLbl.Size               = UDim2.new(1, -80, 0, 18)
-    StatusLbl.AnchorPoint        = Vector2.new(0.5, 0)
-    StatusLbl.Position           = UDim2.new(0.5, 0, 0, 158)
-    StatusLbl.BackgroundTransparency = 1
-    StatusLbl.Font               = Enum.Font.Gotham
-    StatusLbl.Text               = "Initializing..."
-    StatusLbl.TextColor3         = C.TxtSub
-    StatusLbl.TextSize           = 11
-    StatusLbl.TextXAlignment     = Enum.TextXAlignment.Left
-    StatusLbl.ZIndex             = 203
-    StatusLbl.Parent             = Card
 
     -- Completed-steps list
     local StepBox = Instance.new("Frame")
-    StepBox.Size             = UDim2.new(1, -60, 0, 108)
-    StepBox.AnchorPoint      = Vector2.new(0.5, 0)
-    StepBox.Position         = UDim2.new(0.5, 0, 0, 210)
+    StepBox.Size             = UDim2.new(1, -36, 0, 160)
+    StepBox.Position         = UDim2.new(0, 18, 0, 130)
     StepBox.BackgroundTransparency = 1
     StepBox.BorderSizePixel  = 0
     StepBox.ZIndex           = 203
     StepBox.Parent           = Card
     local StepLL = Instance.new("UIListLayout")
-    StepLL.Padding   = UDim.new(0, 5)
+    StepLL.Padding   = UDim.new(0, 4)
     StepLL.SortOrder = Enum.SortOrder.LayoutOrder
     StepLL.Parent    = StepBox
 
     -- Credit footer
     local CreditLbl = Instance.new("TextLabel")
-    CreditLbl.Size               = UDim2.new(1, 0, 0, 16)
+    CreditLbl.Size               = UDim2.new(1, 0, 0, 14)
     CreditLbl.AnchorPoint        = Vector2.new(0.5, 1)
-    CreditLbl.Position           = UDim2.new(0.5, 0, 1, -10)
+    CreditLbl.Position           = UDim2.new(0.5, 0, 1, -8)
     CreditLbl.BackgroundTransparency = 1
     CreditLbl.Font               = Enum.Font.Gotham
     CreditLbl.Text               = "D.R.X  •  Secure Boot"
-    CreditLbl.TextColor3         = Color3.fromRGB(50, 50, 70)
+    CreditLbl.TextColor3         = Color3.fromRGB(42, 42, 60)
     CreditLbl.TextSize           = 10
     CreditLbl.ZIndex             = 203
     CreditLbl.Parent             = Card
@@ -422,7 +420,20 @@ function Library:CreateWindow(title, options)
     Corner(XBtn, 7)
     XBtn.MouseEnter:Connect(function()  Tw(XBtn, {BackgroundColor3 = C.Error, TextColor3 = C.TxtHi}) end)
     XBtn.MouseLeave:Connect(function()  Tw(XBtn, {BackgroundColor3 = C.Elevated, TextColor3 = C.TxtSub}) end)
-    XBtn.MouseButton1Click:Connect(function() Main.Visible = false end)
+    XBtn.MouseButton1Click:Connect(function()
+        Main.Visible = false
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+        UserInputService.MouseIconEnabled = true
+    end)
+
+    -- Show cursor and unlock character look when menu is open
+    local function ApplyMenuMouseState()
+        if Main.Visible then
+            UserInputService.MouseBehavior    = Enum.MouseBehavior.Default
+            UserInputService.MouseIconEnabled = true
+        end
+        -- When closed the game's own input controller takes back over — don't force anything
+    end
 
     -- Sidebar
     local Sidebar = Instance.new("Frame")
@@ -1014,6 +1025,7 @@ function Library:CreateWindow(title, options)
         UserInputService.InputBegan:Connect(function(i, gp)
             if not gp and i.KeyCode == toggleKey then
                 Main.Visible = not Main.Visible
+                ApplyMenuMouseState()
             end
         end)
 
@@ -1161,7 +1173,10 @@ function Library:CreateWindow(title, options)
             if bg2 then bg2:Destroy() end
             Tw(BarFill, {Size = UDim2.new(1, 0, 1, 0)}, 0.8, Enum.EasingStyle.Cubic)
 
-            task.wait(5)
+            task.wait(10)
+            Tw(Card,    {BackgroundTransparency = 1}, 0.5)
+            Tw(Overlay, {BackgroundTransparency = 1}, 0.5)
+            task.wait(0.6)
             Tw(blurFx, {Size = 0}, 0.9)
             task.wait(1)
             pcall(function() blurFx:Destroy() end)
@@ -1250,6 +1265,11 @@ function Library:CreateWindow(title, options)
     end)
 
     Win.Main = Main
+    -- Win.IsOpen is true while the menu is visible — used by third person to pause look
+    Win.IsOpen = false
+    Main:GetPropertyChangedSignal("Visible"):Connect(function()
+        Win.IsOpen = Main.Visible
+    end)
     return Win
 end
 
