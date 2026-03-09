@@ -124,20 +124,24 @@ end
 -- ════════════════════════════════════════════════
 --[[
   options = {
-    MusicId     = "rbxassetid://XXXXXXXXXX",  -- audio to play during loading
-    Logo        = "D · R · X",               -- big title on loading screen
-    PlaceId     = 0,                          -- lock to this Roblox PlaceId (0 = any game)
+    Logo     = "D · R · X",   -- big title on loading screen
+    PlaceIds = {123, 456},    -- whitelist of allowed PlaceIds (nil = any game)
   }
 --]]
 function Library:CreateWindow(title, options)
     options = options or {}
-    local musicId      = options.MusicId  or nil
-    local logoText     = options.Logo     or "D · R · X"
-    local allowedPlace = options.PlaceId  or 0   -- 0 means no restriction
+    local logoText      = options.Logo     or "D · R · X"
+    local allowedPlaces = options.PlaceIds or nil  -- nil = no restriction
 
-    -- Set config folder scoped to this game so configs don't bleed between games
-    if allowedPlace ~= 0 then
-        FOLDER = "DRX_Configs_"..tostring(allowedPlace)
+    -- Build a lookup set for O(1) checks
+    local placeSet = {}
+    if allowedPlaces then
+        for _, id in ipairs(allowedPlaces) do placeSet[id] = true end
+    end
+
+    -- Set config folder scoped to first PlaceId so configs stay per-game
+    if allowedPlaces and #allowedPlaces > 0 then
+        FOLDER = "DRX_Configs_"..tostring(allowedPlaces[1])
     else
         FOLDER = "DRX_Configs"
     end
@@ -164,30 +168,6 @@ function Library:CreateWindow(title, options)
     blurFx.Size   = 0
     blurFx.Parent = Lighting
     Tw(blurFx, {Size = 28}, 1.2)
-
-    -- ─── Load Music ────────────────────────────
-    -- Songs hardcoded into the library — always plays on any game.
-    -- These are free Roblox audio assets. Swap IDs to whatever you upload.
-    -- To use your own: upload your MP3 at create.roblox.com/store/audio
-    -- then replace the ID in this list.
-    local LIBRARY_SONGS = {
-        "rbxassetid://1843673780",   -- Phonk / dark ambient (free asset)
-        "rbxassetid://1837853995",   -- Lo-fi chill
-        "rbxassetid://1843911023",   -- Dark synth
-    }
-    local pickedSong  = LIBRARY_SONGS[math.random(1, #LIBRARY_SONGS)]
-    -- Allow the user to override with their own ID via options.MusicId
-    local songToPlay  = musicId or pickedSong
-
-    local loadMusic = Instance.new("Sound")
-    loadMusic.SoundId              = songToPlay
-    loadMusic.Volume               = 0.55
-    loadMusic.Looped               = true
-    loadMusic.RollOffMaxDistance   = 99999
-    if not pcall(function() loadMusic.Parent = workspace end) then
-        loadMusic.Parent = LocalPlayer.PlayerGui
-    end
-    loadMusic:Play()
 
     -- ════════════════════════════════════════════
     -- LOADING SCREEN UI
@@ -1046,11 +1026,11 @@ function Library:CreateWindow(title, options)
 
     task.spawn(function()
         -- ── Game lock check ─────────────────────
-        if allowedPlace ~= 0 and game.PlaceId ~= allowedPlace then
+        if allowedPlaces and not placeSet[game.PlaceId] then
             -- Wrong game — show error state on loading screen and halt
             PctLbl.Text        = "✗"
             PctLbl.TextColor3  = C.Error
-            StatusLbl.Text     = "Wrong game. Execute Project Delta only."
+            StatusLbl.Text     = "Wrong game. Execute on Project Delta only."
             StatusLbl.TextColor3 = C.Error
             BarFill.BackgroundColor3 = C.Error
             Tw(BarFill, {Size = UDim2.new(1, 0, 1, 0)}, 0.4)
@@ -1068,14 +1048,10 @@ function Library:CreateWindow(title, options)
             ErrLbl.ZIndex             = 203
             ErrLbl.Parent             = Card
 
-            -- Fade blur back out since we won't proceed
             task.wait(3)
             Tw(blurFx, {Size = 0}, 0.9)
             task.wait(1)
             pcall(function() blurFx:Destroy() end)
-            Tw(loadMusic, {Volume = 0}, 0.5)
-            task.wait(0.6)
-            pcall(function() loadMusic:Stop() loadMusic:Destroy() end)
             return  -- stop — never show main menu
         end
 
@@ -1139,11 +1115,6 @@ function Library:CreateWindow(title, options)
         Tw(blurFx, {Size = 0}, 0.85)
         task.wait(0.95)
         pcall(function() blurFx:Destroy() end)
-
-        -- ── Fade out music ──────────────────────
-        Tw(loadMusic, {Volume = 0}, 0.85)
-        task.wait(0.95)
-        pcall(function() loadMusic:Stop() loadMusic:Destroy() end)
 
         -- ── Build settings tab ──────────────────
         BuildSettingsTab()
